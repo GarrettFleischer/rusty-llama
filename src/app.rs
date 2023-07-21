@@ -1,8 +1,14 @@
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use crate::api::converse;
 
-use crate::model::conversation::{self, Conversation, Message};
+mod components;
+
+
+use crate::model::conversation::{Conversation, Message};
+use components::chat_area::ChatArea;
+use components::type_area::TypeArea;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -44,9 +50,32 @@ fn ChatPage(cx: Scope) -> impl IntoView {
             user: true,
         };
 
-        set_conversation.update(move |c| c.messages.push(user_message))
+        set_conversation.update(move |c| c.messages.push(user_message));
+        
+        converse(cx, conversation.get())
     });
 
+    create_effect(cx, move |_| {
+       if let Some(_) = send.input().get() {
+           let model_message = Message {
+               user: false,
+               text: String::from("...")
+           };
+           
+           set_conversation.update(move |c| {
+               c.messages.push(model_message);
+           })
+       } 
+    });
+    
+    create_effect(cx, move |_| {
+        if let Some(Ok(response)) = send.value().get() {
+            set_conversation.update(move |c| {
+                c.messages.last_mut().unwrap().text = response;
+            });
+        }
+    });
+    
     view! { cx,
         <ChatArea conversation/>
         <TypeArea send/>
